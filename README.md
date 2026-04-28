@@ -1,4 +1,4 @@
-# Cortex-RTOS-Kernel — A Real-Time Executive for the ARM Cortex-M4
+# Cortex-RTOS-Kernel
 
 A small real-time kernel written from scratch for the STM32F401RE / STM32F411RE
 (ARM Cortex-M4) running on the ST Nucleo-64 board. The kernel supports
