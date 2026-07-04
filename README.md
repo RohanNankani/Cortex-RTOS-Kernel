@@ -26,7 +26,7 @@ test_results/
 
 The kernel was built up in three stages. Each stage builds on the previous one.
 
-### Stage 1 — Cooperative multitasking
+### Stage 1: Cooperative multitasking
 
 - A fixed-capacity Task Control Block (TCB) table with up to `MAX_TASKS`
   entries. Each TCB carries the entry function, stack high address, stack
@@ -47,7 +47,7 @@ The kernel was built up in three stages. Each stage builds on the previous one.
   saving/restoring registers does not get clobbered by the C ABI. The
   scheduler itself is a regular C function called via `BL` from the handler.
 
-### Stage 2 — Dynamic memory management
+### Stage 2: Dynamic memory management
 
 - The heap lives between `_img_end` (defined in the linker script) and
   `_estack - _Min_Stack_Size`. `k_mem_init` walks that range and writes the
@@ -63,7 +63,7 @@ The kernel was built up in three stages. Each stage builds on the previous one.
   smaller than `size` — a quick way to measure external fragmentation from a
   test program.
 
-### Stage 3 — Pre-emptive EDF scheduling
+### Stage 3: Pre-emptive EDF scheduling
 
 - TCBs gained a `deadline` field (in ms) and a per-task remaining-time
   counter. SysTick fires every 1 ms and decrements the running task's
@@ -83,6 +83,31 @@ The kernel was built up in three stages. Each stage builds on the previous one.
   caller.
 - The `osSetDeadline` and `osCreateDeadlineTask` paths mask interrupts while
   touching scheduler state to avoid races with SysTick.
+
+## Testing
+The kernel includes a structured test suite designed to validate correctness across scheduling, memory safety, and real-time behavior. Tests are executed directly on the STM32 Nucleo board with results streamed over UART and recorded in `test_results/test_report.md`.
+
+### Functional correctness tests
+- Verified task lifecycle correctness including creation, yielding, sleeping, and termination under cooperative and preemptive modes.
+- Validated SVC-based syscall routing and PendSV context switching by inspecting register state before and after context switches.
+- Confirmed EDF scheduling behavior using controlled task sets with overlapping deadlines and deterministic execution ordering.
+
+### Memory allocator tests
+- Stress-tested `k_mem_alloc` and `k_mem_dealloc` with randomized allocation patterns to validate splitting, alignment, and coalescing logic.
+- Verified protection against double free, invalid pointer deallocation, and cross-task free attempts.
+- Measured external fragmentation using `k_mem_count_extfrag(size)` under repeated allocation and deallocation cycles.
+- Confirmed heap stability under worst-case fragmentation and near-exhaustion conditions.
+
+### Scheduling and real-time behavior tests
+- Validated SysTick-driven preemption and deadline enforcement under mixed periodic and aperiodic workloads.
+- Tested preemption correctness when introducing tasks with earlier deadlines via `osSetDeadline`.
+- Verified `osSleep(ms)` and `osPeriodYield()` timing accuracy within 1 ms SysTick resolution.
+- Ensured absence of starvation and priority inversion under sustained high-load scheduling.
+
+### Stress and stability tests
+- Ran long-duration multi-task workloads with frequent context switches to detect stack corruption or register leakage.
+- Exercised kernel under maximum task capacity (`MAX_TASKS`) and heap exhaustion scenarios.
+- Verified consistent scheduler behavior under continuous allocation and task churn.
 
 ## API summary
 
